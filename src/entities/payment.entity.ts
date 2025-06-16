@@ -25,8 +25,7 @@ export class Payment {
   @Prop({ type: String, required: true })
   token: string;
 
-
-  @Prop({ type: String, default: 'pending' }) 
+  @Prop({ type: String, default: 'pending' })
   status: string;
 }
 

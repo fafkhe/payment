@@ -57,13 +57,25 @@ export class AppService {
     };
 
     try {
-      const data = {
-        MerchantCode: this.merchantCode,
-        Token: token,
-      };
+      const client = await soap.createClientAsync(this.verifyUrl);
+      const [result] = await client.VerifyPaymentAsync(data);
+      const verifyResult = result.VerifyPaymentResult;
 
+      if (verifyResult <= 0) {
+        await this.paymentModel.findOneAndUpdate(
+          { token },
+          { status: 'failed', referenceNumber },
+        );
+        throw new InternalServerErrorException('Payment verification failed');
+      }
 
-      
-    } catch (error) {}
+      await this.paymentModel.findOneAndUpdate(
+        { token },
+        { status: 'successful', referenceNumber},
+      );
+      return verifyResult;
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to verify payment');
+    }
   }
 }
