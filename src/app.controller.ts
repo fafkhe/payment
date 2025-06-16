@@ -10,7 +10,7 @@ export class AppController {
   constructor(
     private readonly paymentService: AppService,
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
-  ) { }
+  ) {}
 
   @Get('/')
   async requestPayment(
@@ -21,9 +21,12 @@ export class AppController {
   ) {
     try {
       const amountNumber = Number(amount);
-   
 
-      const token = await this.paymentService.requestPayment(amountNumber, orderId, callbackUrl);
+      const token = await this.paymentService.requestPayment(
+        amountNumber,
+        orderId,
+        callbackUrl,
+      );
       const paymentUrl = `https://sep.shaparak.ir/PaymentsGateway/Payment.aspx?token=${token}`;
       return res.redirect(paymentUrl);
     } catch (error) {
@@ -33,7 +36,25 @@ export class AppController {
 
   @Post('callback')
   async paymentCallback(@Req() req: Request, @Res() res: Response) {
- 
+    //az bank ferestade mishe: referenceId //
+    //statusCode 0:moafagh //
+
+    const { Token, ReferenceId, statusCode } = req.body;
+
+    if (!Token || !ReferenceId || !statusCode) {
+      return res.status(400).send('Invalid callback parameters');
+    }
+
+    if (statusCode !== '0') {
+      return res.status(400).send(`Payment failed with ResCode: ${statusCode}`);
+    }
+
+    try {
+      await this.paymentService.verifyPayment(Token, ReferenceId);
+      return res.send('Payment was successful and verified');
+    } catch (error) {
+      console.error(error);
+      return res.status(500).send('Error verifying payment');
+    }
   }
-  
 }

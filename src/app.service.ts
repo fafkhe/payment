@@ -1,5 +1,8 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as soap from 'soap';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Payment, PaymentDocument } from './entities/payment.entity';
 
 @Injectable()
 export class AppService {
@@ -8,6 +11,10 @@ export class AppService {
   private readonly verifyUrl =
     'https://sep.shaparak.ir/PaymentsGateway/VerifyPayment.asmx?WSDL';
   private readonly merchantCode = '';
+
+  constructor(
+    @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
+  ) {}
 
   // recieving token
   async requestPayment(amount: number, orderId: string, callbackUrl: string) {
@@ -27,6 +34,13 @@ export class AppService {
         throw new InternalServerErrorException('Invalid token');
       }
 
+      await this.paymentModel.create({
+        orderId,
+        amount,
+        token,
+        status: 'pending',
+      });
+
       return token;
     } catch (error) {
       console.error('Payment request failed', error);
@@ -34,19 +48,22 @@ export class AppService {
     }
   }
 
-  //2api Verify Payment
+  //2api Verify Payment and save to dtatbase
 
   async verifyPayment(token: string, referenceNumber: string) {
-  const data = {
-    MerchantCode: this.merchantCode,
-    Token: token,
-  };
+    const data = {
+      MerchantCode: this.merchantCode,
+      Token: token,
+    };
 
-  try {
-   
-  } catch (error) {
-    
+    try {
+      const data = {
+        MerchantCode: this.merchantCode,
+        Token: token,
+      };
+
+
+      
+    } catch (error) {}
   }
-}
-
 }
